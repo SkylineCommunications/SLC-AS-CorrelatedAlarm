@@ -45,6 +45,7 @@ Revision History:
 DATE		VERSION		AUTHOR			COMMENTS
 
 04/12/2023	1.0.0.1		GMV, Skyline	Initial version
+06/12/2023  1.0.0.2     GMV, Skyline    Retrieve alarm details by using an SLNET message.
 ***********************************************************************************************************************/
 
 namespace SLCASCorrelatedAlarm
@@ -52,6 +53,7 @@ namespace SLCASCorrelatedAlarm
 	using System;
 	using Newtonsoft.Json;
 	using Skyline.DataMiner.Automation;
+	using Skyline.DataMiner.Net.Messages;
 
     /// <summary>
     /// Represents a DataMiner Automation script.
@@ -71,6 +73,12 @@ namespace SLCASCorrelatedAlarm
                 var alarmInfo = engine.GetScriptParam(65006).Value;
                 var alarm = CorrelatedAlarmInfo.FromCorrelatedInfo(alarmInfo);
                 engine.GenerateInformation($"DEBUG: {JsonConvert.SerializeObject(alarm, Formatting.Indented)}");
+
+                GetAlarmDetailsMessage alarmMsg = new GetAlarmDetailsMessage(-1, -1, new int[] { alarm.AlarmId });
+                var response = engine.SendSLNetMessage(alarmMsg);
+                var alarmDetails = (response.Length > 0 ? response[0] as AlarmEventMessage : null) ??
+                    throw new Exception("Couldn't retrieve the alarm details");
+                engine.GenerateInformation($"DEBUG:The alarm description is \"{alarmDetails.Description}\"");
             }
             catch (Exception ex)
             {
